@@ -26,6 +26,13 @@
 import gym
 import numpy as np
 
+import numpy as np
+
+# Define bool8 manually if missing
+if not hasattr(np, 'bool8'):
+    np.bool8 = bool
+
+
 
 class CustomAgent:
     def __init__(self, observation_space):
@@ -53,13 +60,13 @@ total_reward = 0
 # run the environment
 for i in range(200):
     print("Episode Step:", i)
-    
+
     # Render the environment to visualize it
     env.render()
 
     # Choose action based on the custom agent's policy
     action = agent.get_action(observation)
-    
+
     # Take the chosen action
     next_state, reward, done, info, debug_info = env.step(action)
 
@@ -78,5 +85,5 @@ for i in range(200):
         print("Total Reward:", total_reward)
         print("Done:", done)
         break
-        
+
 env.close()
