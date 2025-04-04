@@ -20,19 +20,14 @@
     The CartPole environment has 2 actions:
         1. Move the cart to the left - Action 0
         2. Move the cart to the right - Action 1
-        
+
 """
-
 import gym
-import numpy as np
-
 import numpy as np
 
 # Define bool8 manually if missing
 if not hasattr(np, 'bool8'):
     np.bool8 = bool
-
-
 
 class CustomAgent:
     def __init__(self, observation_space):
@@ -43,47 +38,50 @@ class CustomAgent:
         observation_weight_product = np.dot(observation, self.weights)
         return 1 if observation_weight_product >= 0 else 0
 
+def run_episode(env, agent):
+    observation, info = env.reset(seed=42)
+    total_reward = 0
 
-# load CartPole's environment
-env = gym.make('CartPole-v1', render_mode="human")
+    for _ in range(200):
+        action = agent.get_action(observation)
+        next_state, reward, done, truncated, info = env.step(action)
+        total_reward += reward
+        observation = next_state
+        if done or truncated:
+            break
+
+    return total_reward
+
+def random_search(env, num_samples=10000):
+    best_total_reward = -float('inf')
+    best_weights = None
+
+    agent = CustomAgent(env.observation_space)
+
+    for i in range(num_samples):
+        print('Sample:', i)
+        agent.weights = np.random.uniform(-1, 1, size=agent.observation_space.shape)
+        total_reward = run_episode(env, agent)
+        print('Total reward:', total_reward)
+        if total_reward > best_total_reward:
+            best_total_reward = total_reward
+            best_weights = agent.weights.copy()
+
+    return best_weights
+
+# Load CartPole's environment
+env = gym.make('CartPole-v1', render_mode='human')
 env.action_space.seed(42)
 
-# Create the custom agent
+# Train the agent using random search
+best_weights = random_search(env)
+
+# Create the custom agent with the best weights
 agent = CustomAgent(env.observation_space)
+agent.weights = best_weights
 
-# reset the environment
-observation, info = env.reset(seed=42)
-
-# calculate reward of the episode
-total_reward = 0
-
-# run the environment
-for i in range(200):
-    print("Episode Step:", i)
-
-    # Render the environment to visualize it
-    env.render()
-
-    # Choose action based on the custom agent's policy
-    action = agent.get_action(observation)
-
-    # Take the chosen action
-    next_state, reward, done, info, debug_info = env.step(action)
-
-    print("Chosen action:", action)
-    print("Next state:", next_state)
-    print("Reward:", reward)
-
-    # Update the current observation
-    observation = next_state
-
-    # Update the total reward
-    total_reward += reward
-
-    # Check if the episode is done
-    if done:
-        print("Total Reward:", total_reward)
-        print("Done:", done)
-        break
+# Run an episode and get the total reward
+total_reward = run_episode(env, agent)
+print(f"Total reward for the episode with the best weights: {total_reward}")
 
 env.close()
