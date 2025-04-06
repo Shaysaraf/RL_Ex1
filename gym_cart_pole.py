@@ -24,6 +24,7 @@
 """
 import gym
 import numpy as np
+import matplotlib.pyplot as plt
 
 # Define bool8 manually if missing
 if not hasattr(np, 'bool8'):
@@ -37,12 +38,15 @@ class CustomAgent:
     def get_action(self, observation):
         observation_weight_product = np.dot(observation, self.weights)
         return 1 if observation_weight_product >= 0 else 0
+    def get_action(self, observation):
+        observation_weight_product = np.dot(observation, self.weights)
+        return 1 if observation_weight_product >= 0 else 0
 
 def run_episode(env, agent):
     observation, info = env.reset(seed=42)
     total_reward = 0
 
-    for _ in range(200):
+    for i in range(200):
         action = agent.get_action(observation)
         next_state, reward, done, truncated, info = env.step(action)
         total_reward += reward
@@ -52,36 +56,58 @@ def run_episode(env, agent):
 
     return total_reward
 
-def random_search(env, num_samples=10000):
+def random_search(env, num_samples=5):
     best_total_reward = -float('inf')
     best_weights = None
 
     agent = CustomAgent(env.observation_space)
+    agent.weights = np.random.uniform(-1, 1, size=agent.observation_space.shape)
 
     for i in range(num_samples):
-        print('Sample:', i)
         agent.weights = np.random.uniform(-1, 1, size=agent.observation_space.shape)
         total_reward = run_episode(env, agent)
-        print('Total reward:', total_reward)
+        print(f"Sample {i + 1}/{num_samples}: Total Reward = {total_reward}")
         if total_reward > best_total_reward:
             best_total_reward = total_reward
             best_weights = agent.weights.copy()
 
-    return best_weights
+    return best_weights, best_total_reward
+
+def evaluate_random_search(env, num_searches=5, max_episodes=5):
+    episodes_to_solve = []
+
+    for i in range(num_searches):
+        best_weights,best_total_reward = random_search(env)
+        agent = CustomAgent(env.observation_space)
+        agent.weights = best_weights
+        print(f"Best weights from search {i + 1}: {best_weights}")
+        print(f"Best total reward from search {i + 1}: {best_total_reward}")
+        for episode in range(max_episodes):
+            total_reward = run_episode(env, agent)
+            if total_reward == 200:
+                episodes_to_solve.append(episode + 1)
+                break
+        else:
+            episodes_to_solve.append(max_episodes)
+
+    return episodes_to_solve
 
 # Load CartPole's environment
 env = gym.make('CartPole-v1', render_mode='human')
 env.action_space.seed(42)
 
-# Train the agent using random search
-best_weights = random_search(env)
+# Evaluate the random search scheme
+episodes_to_solve = evaluate_random_search(env)
 
-# Create the custom agent with the best weights
-agent = CustomAgent(env.observation_space)
-agent.weights = best_weights
+# Plot histogram
+plt.hist(episodes_to_solve, bins=30, edgecolor='black')
+plt.xlabel('Number of Episodes')
+plt.ylabel('Frequency')
+plt.title('Histogram of Episodes Required to Reach Score 200')
+plt.show()
 
-# Run an episode and get the total reward
-total_reward = run_episode(env, agent)
-print(f"Total reward for the episode with the best weights: {total_reward}")
+# Report average number of episodes
+average_episodes = np.mean(episodes_to_solve)
+print(f"Average number of episodes required to reach score 200: {average_episodes}")
 
 env.close()
