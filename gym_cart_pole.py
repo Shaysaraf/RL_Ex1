@@ -20,8 +20,9 @@
     The CartPole environment has 2 actions:
         1. Move the cart to the left - Action 0
         2. Move the cart to the right - Action 1
-
+.
 """
+
 import gym
 import numpy as np
 import matplotlib.pyplot as plt
