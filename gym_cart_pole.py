@@ -56,7 +56,7 @@ def run_episode(env, agent):
 
     return total_reward
 
-def random_search(env, num_samples=5):
+def random_search(env, num_samples=100):
     best_total_reward = -float('inf')
     best_weights = None
 
@@ -73,7 +73,7 @@ def random_search(env, num_samples=5):
 
     return best_weights, best_total_reward
 
-def evaluate_random_search(env, num_searches=5, max_episodes=5):
+def evaluate_random_search(env, num_searches=100, max_episodes=1000):
     episodes_to_solve = []
 
     for i in range(num_searches):
