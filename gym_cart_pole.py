@@ -38,9 +38,6 @@ class CustomAgent:
     def get_action(self, observation):
         observation_weight_product = np.dot(observation, self.weights)
         return 1 if observation_weight_product >= 0 else 0
-    def get_action(self, observation):
-        observation_weight_product = np.dot(observation, self.weights)
-        return 1 if observation_weight_product >= 0 else 0
 
 def run_episode(env, agent):
     observation, info = env.reset(seed=42)
