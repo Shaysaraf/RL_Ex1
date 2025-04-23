@@ -3,11 +3,12 @@ import torch.nn as nn
 import torchvision.datasets as dsets
 import torchvision.transforms as transforms
 from torch.autograd import Variable
+import matplotlib.pyplot as plt
 
 # Hyper Parameters
 input_size = 784
 num_classes = 10
-num_epochs = 20
+num_epochs = 200
 batch_size = 100
 learning_rate = 1e-3
 
@@ -30,8 +31,11 @@ test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
                                           batch_size=batch_size,
                                           shuffle=False)
 
-# Function to train and evaluate a model
-def train_and_evaluate(model, optimizer, criterion, num_epochs, train_loader, test_loader):
+# Function to train and evaluate a model with loss tracking
+def train_and_evaluate_with_plot(model, optimizer, criterion, num_epochs, train_loader, test_loader):
+    # Track losses
+    epoch_losses = []
+
     # Training Loop
     for epoch in range(num_epochs):
         total_loss = 0
@@ -49,6 +53,8 @@ def train_and_evaluate(model, optimizer, criterion, num_epochs, train_loader, te
             loss.backward()
             optimizer.step()
 
+        # Record loss for the epoch
+        epoch_losses.append(total_loss)
         print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {total_loss:.4f}")
 
     # Evaluation Loop
@@ -64,23 +70,22 @@ def train_and_evaluate(model, optimizer, criterion, num_epochs, train_loader, te
 
     accuracy = 100 * correct / total
     print(f'Accuracy of the model: {accuracy:.2f} %')
-    return accuracy
 
-# 1. Simple Logistic Regression with SGD
+    return accuracy, epoch_losses
+
+# Train and plot for each model
 print("Training Simple Logistic Regression with SGD...")
 model1 = nn.Linear(input_size, num_classes)
 criterion1 = nn.CrossEntropyLoss()
 optimizer1 = torch.optim.SGD(model1.parameters(), lr=learning_rate)
-accuracy1 = train_and_evaluate(model1, optimizer1, criterion1, num_epochs, train_loader, test_loader)
+accuracy1, losses1 = train_and_evaluate_with_plot(model1, optimizer1, criterion1, num_epochs, train_loader, test_loader)
 
-# 2. Simple Logistic Regression with Adam
 print("\nTraining Simple Logistic Regression with Adam...")
 model2 = nn.Linear(input_size, num_classes)
 criterion2 = nn.CrossEntropyLoss()
 optimizer2 = torch.optim.Adam(model2.parameters(), lr=learning_rate)
-accuracy2 = train_and_evaluate(model2, optimizer2, criterion2, num_epochs, train_loader, test_loader)
+accuracy2, losses2 = train_and_evaluate_with_plot(model2, optimizer2, criterion2, num_epochs, train_loader, test_loader)
 
-# 3. Deep Neural Network with Adam
 print("\nTraining Deep Neural Network with Adam...")
 hidden_size = 500
 model3 = nn.Sequential(
@@ -90,10 +95,16 @@ model3 = nn.Sequential(
 )
 criterion3 = nn.CrossEntropyLoss()
 optimizer3 = torch.optim.Adam(model3.parameters(), lr=learning_rate)
-accuracy3 = train_and_evaluate(model3, optimizer3, criterion3, num_epochs, train_loader, test_loader)
+accuracy3, losses3 = train_and_evaluate_with_plot(model3, optimizer3, criterion3, num_epochs, train_loader, test_loader)
 
-# Print final results
-print("\nFinal Results:")
-print(f"Simple Logistic Regression with SGD Accuracy: {accuracy1:.2f} %")
-print(f"Simple Logistic Regression with Adam Accuracy: {accuracy2:.2f} %")
-print(f"Deep Neural Network with Adam Accuracy: {accuracy3:.2f} %")
+# Plot the training losses
+plt.figure(figsize=(10, 6))
+plt.plot(range(1, num_epochs + 1), losses1, label="Logistic Regression (SGD)")
+plt.plot(range(1, num_epochs + 1), losses2, label="Logistic Regression (Adam)")
+plt.plot(range(1, num_epochs + 1), losses3, label="Deep Neural Network (Adam)")
+plt.xlabel("Epochs")
+plt.ylabel("Loss")
+plt.title("Training Loss vs Epochs")
+plt.legend()
+plt.grid()
+plt.show()
