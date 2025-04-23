@@ -39,9 +39,6 @@ class CustomAgent:
     def get_action(self, observation):
         observation_weight_product = np.dot(observation, self.weights)
         return 1 if observation_weight_product >= 0 else 0
-    def get_action(self, observation):
-        observation_weight_product = np.dot(observation, self.weights)
-        return 1 if observation_weight_product >= 0 else 0
 
 def run_episode(env, agent):
     observation, info = env.reset(seed=42)
@@ -57,9 +54,11 @@ def run_episode(env, agent):
 
     return total_reward
 
-def random_search(env, num_samples=5):
+
+def random_search(env, num_samples=10):
     best_total_reward = -float('inf')
     best_weights = None
+    first_episode_to_reach_200 = None
 
     agent = CustomAgent(env.observation_space)
     agent.weights = np.random.uniform(-1, 1, size=agent.observation_space.shape)
@@ -68,47 +67,55 @@ def random_search(env, num_samples=5):
         agent.weights = np.random.uniform(-1, 1, size=agent.observation_space.shape)
         total_reward = run_episode(env, agent)
         print(f"Sample {i + 1}/{num_samples}: Total Reward = {total_reward}")
+
+        if total_reward == 200 and first_episode_to_reach_200 == None:
+            first_episode_to_reach_200 = i + 1  # Save the 1-based index of the episode
+
         if total_reward > best_total_reward:
             best_total_reward = total_reward
             best_weights = agent.weights.copy()
 
-    return best_weights, best_total_reward
+    print(f"First episode to reach 200: {first_episode_to_reach_200}")
+    return best_weights, best_total_reward, first_episode_to_reach_200
 
-def evaluate_random_search(env, num_searches=5, max_episodes=5):
-    episodes_to_solve = []
+def evaluate_random_search(env, num_searches=1000):
+    first_episodes_to_reach_200 = []
 
     for i in range(num_searches):
-        best_weights,best_total_reward = random_search(env)
+        best_weights, best_total_reward, first_episode_to_reach_200 = random_search(env)
         agent = CustomAgent(env.observation_space)
         agent.weights = best_weights
         print(f"Best weights from search {i + 1}: {best_weights}")
         print(f"Best total reward from search {i + 1}: {best_total_reward}")
-        for episode in range(max_episodes):
-            total_reward = run_episode(env, agent)
-            if total_reward == 200:
-                episodes_to_solve.append(episode + 1)
-                break
-        else:
-            episodes_to_solve.append(max_episodes)
 
-    return episodes_to_solve
+        # Save the first episode to reach 200 (or None if not reached)
+        first_episodes_to_reach_200.append(first_episode_to_reach_200)
+
+    return first_episodes_to_reach_200
 
 # Load CartPole's environment
 env = gym.make('CartPole-v1', render_mode='human')
 env.action_space.seed(42)
 
+
 # Evaluate the random search scheme
-episodes_to_solve = evaluate_random_search(env)
+first_episodes_to_reach_200 = evaluate_random_search(env)
+
+# Filter out None values (cases where 200 was not reached)
+valid_episodes = [ep for ep in first_episodes_to_reach_200 if ep is not None]
 
 # Plot histogram
-plt.hist(episodes_to_solve, bins=30, edgecolor='black')
+plt.hist(valid_episodes, bins=30, edgecolor='black')
 plt.xlabel('Number of Episodes')
 plt.ylabel('Frequency')
 plt.title('Histogram of Episodes Required to Reach Score 200')
 plt.show()
 
-# Report average number of episodes
-average_episodes = np.mean(episodes_to_solve)
-print(f"Average number of episodes required to reach score 200: {average_episodes}")
+# Report average number of episodes (only for valid cases)
+if valid_episodes:
+    average_episodes = np.mean(valid_episodes)
+    print(f"Average number of episodes required to reach score 200: {average_episodes}")
+else:
+    print("No episodes reached a score of 200.")
 
 env.close()
