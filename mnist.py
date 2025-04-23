@@ -22,7 +22,7 @@ test_dataset = dsets.MNIST(root='./data',
                            train=False,
                            transform=transforms.ToTensor())
 
-# Data Loaders
+# Data Loader
 train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
                                            batch_size=batch_size,
                                            shuffle=True)
