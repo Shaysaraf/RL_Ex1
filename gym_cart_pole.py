@@ -20,9 +20,8 @@
     The CartPole environment has 2 actions:
         1. Move the cart to the left - Action 0
         2. Move the cart to the right - Action 1
-.
-"""
 
+"""
 import gym
 import numpy as np
 import matplotlib.pyplot as plt
@@ -31,15 +30,19 @@ import matplotlib.pyplot as plt
 if not hasattr(np, 'bool8'):
     np.bool8 = bool
 
+
+# define the agent
 class CustomAgent:
     def __init__(self, observation_space):
         self.observation_space = observation_space
         self.weights = np.random.uniform(-1, 1, size=self.observation_space.shape)
-
+    # This method will be used to get the action based on the observation
     def get_action(self, observation):
         observation_weight_product = np.dot(observation, self.weights)
         return 1 if observation_weight_product >= 0 else 0
 
+
+# This function will be used to run an episode
 def run_episode(env, agent):
     observation, info = env.reset(seed=42)
     total_reward = 0
@@ -54,8 +57,8 @@ def run_episode(env, agent):
 
     return total_reward
 
-
-def random_search(env, num_samples=10):
+# this function will be used to run the random search
+def random_search(env, num_samples=10000):
     best_total_reward = -float('inf')
     best_weights = None
     first_episode_to_reach_200 = None
@@ -67,17 +70,17 @@ def random_search(env, num_samples=10):
         agent.weights = np.random.uniform(-1, 1, size=agent.observation_space.shape)
         total_reward = run_episode(env, agent)
         print(f"Sample {i + 1}/{num_samples}: Total Reward = {total_reward}")
-
-        if total_reward == 200 and first_episode_to_reach_200 == None:
-            first_episode_to_reach_200 = i + 1  # Save the 1-based index of the episode
-
         if total_reward > best_total_reward:
             best_total_reward = total_reward
             best_weights = agent.weights.copy()
-
+        if total_reward == 200 and first_episode_to_reach_200 == None:
+            first_episode_to_reach_200 = i + 1  # Save the 1-based index of the episode
+            break  # stop searching if we reach score 200
     print(f"First episode to reach 200: {first_episode_to_reach_200}")
     return best_weights, best_total_reward, first_episode_to_reach_200
 
+
+# this function will be used to evaluate the random search
 def evaluate_random_search(env, num_searches=1000):
     first_episodes_to_reach_200 = []
 
@@ -92,6 +95,7 @@ def evaluate_random_search(env, num_searches=1000):
         first_episodes_to_reach_200.append(first_episode_to_reach_200)
 
     return first_episodes_to_reach_200
+
 
 # Load CartPole's environment
 env = gym.make('CartPole-v1', render_mode='human')
